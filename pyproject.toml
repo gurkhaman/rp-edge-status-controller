@@ -1,0 +1,11 @@
+[project]
+name = "becs-itrc-0415"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+]
+
+[tool.uv]
+package = false

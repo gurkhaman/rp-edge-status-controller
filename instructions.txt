@@ -1,0 +1,35 @@
+1. 터틀봇 waypoint 변경
+   ↓
+POST /api/telemetry
+{
+  "robot_id": "turtlebot_1",
+  "current_waypoint": "P_08" 
+}
+
+터틀봇 waypoint ID
+: P_01 ~ P_10 
+// 좌표 전송 불필요
+// ID 기준으로 구간, 후보 서버, 서버 추천 등 계산
+
+2. 서버 장애 발생 (다운/복구)
+POST /api/server-health
+{
+  "server_id": "edge_2",
+  "status": "down" (또는 "up")
+}
+
+edge server ID
+: edge_1, edge_2, edge_3, edge_4, edge_5
+
+*waypoint 경로 순서 필요
+현재 서버 추천은 미리 정의된 waypoint 경로(route)를 기준으로 현재 구간과 다음 구간을 조회하는 방식이라 고정된 경로 필요 //testbed_topology.json의 route 필드
+
+
+웹 실행 (현재는 10초 간격으로 경로 갱신)
+uvicorn server:app --reload --port 8765 --no-access-log
+
+서버 다운/복구 테스트
+Invoke-WebRequest -Uri "http://127.0.0.1:8765/api/server-health" -Method POST -Body (@{server_id="edge_1"; status="down"} | ConvertTo-Json) -ContentType "application/json"
+
+터틀봇 웨이포인트 테스트
+Invoke-WebRequest -Uri "http://127.0.0.1:8765/api/telemetry" -Method POST -Body (@{robot_id="turtlebot_1"; current_waypoint="P_08"} | ConvertTo-Json) -ContentType "application/json"

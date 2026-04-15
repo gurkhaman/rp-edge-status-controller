@@ -1,0 +1,119 @@
+
+{
+  "background_image": "image/background.png",
+  "coordinate_frame": {
+    "width": 1536,
+    "height": 1024,
+    "origin": "top-left",
+    "unit": "pixel"
+  },
+  "waypoints": [
+    {"id": "P_01", "x": 18, "y": 920, "label": "corner_south_west"},
+    {"id": "P_02", "x": 18, "y": 61, "label": "corner_north_west"},
+    {"id": "P_03", "x": 370, "y": 61, "label": "junction_north_left"},
+    {"id": "P_04", "x": 1030, "y": 61, "label": "junction_north_right"},
+    {"id": "P_05", "x": 1515, "y": 61, "label": "corner_north_east"},
+    {"id": "P_06", "x": 1515, "y": 420, "label": "junction_east_upper"},
+    {"id": "P_07", "x": 1515, "y": 920, "label": "corner_south_east"},
+    {"id": "P_08", "x": 370, "y": 920, "label": "junction_south_left"},
+    {"id": "P_09", "x": 370, "y": 420, "label": "junction_inner_left"},
+    {"id": "P_10", "x": 1030, "y": 420, "label": "junction_inner_right"}
+  ],
+  "edge_servers": [
+    {"id": "edge_1", "x": 190, "y": 405, "label": "west_edge"},
+    {"id": "edge_2", "x": 690, "y": 220, "label": "north_center_edge"},
+    {"id": "edge_3", "x": 1215, "y": 220, "label": "north_east_edge"},
+    {"id": "edge_4", "x": 690, "y": 685, "label": "south_center_edge"},
+    {"id": "edge_5", "x": 1215, "y": 685, "label": "south_east_edge"}
+  ],
+  "route": [
+    "P_02",
+    "P_01",
+    "P_08",
+    "P_07",
+    "P_06",
+    "P_05"
+  ],
+  "segments": [
+    {"id": "SEG_01", "from": "P_01", "to": "P_02", "candidate_servers": ["edge_1", "edge_4", "edge_2"]},
+    {"id": "SEG_02", "from": "P_02", "to": "P_03", "candidate_servers": ["edge_1", "edge_2", "edge_4"]},
+    {"id": "SEG_03", "from": "P_03", "to": "P_04", "candidate_servers": ["edge_2", "edge_3", "edge_1"]},
+    {"id": "SEG_04", "from": "P_04", "to": "P_05", "candidate_servers": ["edge_3", "edge_2", "edge_5"]},
+    {"id": "SEG_05", "from": "P_05", "to": "P_06", "candidate_servers": ["edge_3", "edge_5", "edge_2"]},
+    {"id": "SEG_06", "from": "P_06", "to": "P_07", "candidate_servers": ["edge_5", "edge_3", "edge_4"]},
+    {"id": "SEG_07", "from": "P_07", "to": "P_08", "candidate_servers": ["edge_5", "edge_4", "edge_3"]},
+    {"id": "SEG_08", "from": "P_08", "to": "P_09", "candidate_servers": ["edge_4", "edge_1", "edge_5"]},
+    {"id": "SEG_09", "from": "P_08", "to": "P_01", "candidate_servers": ["edge_4", "edge_1", "edge_2"]},
+    {"id": "SEG_10", "from": "P_03", "to": "P_09", "candidate_servers": ["edge_2", "edge_4", "edge_1"]},
+    {"id": "SEG_11", "from": "P_04", "to": "P_10", "candidate_servers": ["edge_2", "edge_3", "edge_5"]},
+    {"id": "SEG_12", "from": "P_06", "to": "P_10", "candidate_servers": ["edge_5", "edge_3", "edge_4"]},
+    {"id": "SEG_13", "from": "P_09", "to": "P_10", "candidate_servers": ["edge_4", "edge_2", "edge_5"]}
+  ],
+  "segment_qos": {
+    "SEG_01": {
+      "edge_1": {"response_time_ms": 32, "throughput_mbps": 72},
+      "edge_4": {"response_time_ms": 22, "throughput_mbps": 88},
+      "edge_2": {"response_time_ms": 47, "throughput_mbps": 60}
+    },
+    "SEG_02": {
+      "edge_1": {"response_time_ms": 20, "throughput_mbps": 84},
+      "edge_2": {"response_time_ms": 35, "throughput_mbps": 74},
+      "edge_4": {"response_time_ms": 49, "throughput_mbps": 58}
+    },
+    "SEG_03": {
+      "edge_2": {"response_time_ms": 21, "throughput_mbps": 86},
+      "edge_3": {"response_time_ms": 33, "throughput_mbps": 76},
+      "edge_1": {"response_time_ms": 52, "throughput_mbps": 55}
+    },
+    "SEG_04": {
+      "edge_3": {"response_time_ms": 18, "throughput_mbps": 90},
+      "edge_2": {"response_time_ms": 31, "throughput_mbps": 78},
+      "edge_5": {"response_time_ms": 44, "throughput_mbps": 63}
+    },
+    "SEG_05": {
+      "edge_3": {"response_time_ms": 24, "throughput_mbps": 87},
+      "edge_5": {"response_time_ms": 34, "throughput_mbps": 74},
+      "edge_2": {"response_time_ms": 50, "throughput_mbps": 57}
+    },
+    "SEG_06": {
+      "edge_5": {"response_time_ms": 18, "throughput_mbps": 90},
+      "edge_3": {"response_time_ms": 32, "throughput_mbps": 75},
+      "edge_4": {"response_time_ms": 45, "throughput_mbps": 55}
+    },
+    "SEG_07": {
+      "edge_5": {"response_time_ms": 30, "throughput_mbps": 72},
+      "edge_4": {"response_time_ms": 20, "throughput_mbps": 85},
+      "edge_3": {"response_time_ms": 50, "throughput_mbps": 45}
+    },
+    "SEG_08": {
+      "edge_4": {"response_time_ms": 19, "throughput_mbps": 88},
+      "edge_1": {"response_time_ms": 34, "throughput_mbps": 70},
+      "edge_5": {"response_time_ms": 46, "throughput_mbps": 62}
+    },
+    "SEG_09": {
+      "edge_4": {"response_time_ms": 36, "throughput_mbps": 73},
+      "edge_1": {"response_time_ms": 21, "throughput_mbps": 86},
+      "edge_2": {"response_time_ms": 48, "throughput_mbps": 59}
+    },
+    "SEG_10": {
+      "edge_2": {"response_time_ms": 23, "throughput_mbps": 83},
+      "edge_4": {"response_time_ms": 29, "throughput_mbps": 78},
+      "edge_1": {"response_time_ms": 43, "throughput_mbps": 64}
+    },
+    "SEG_11": {
+      "edge_2": {"response_time_ms": 28, "throughput_mbps": 76},
+      "edge_3": {"response_time_ms": 19, "throughput_mbps": 89},
+      "edge_5": {"response_time_ms": 42, "throughput_mbps": 66}
+    },
+    "SEG_12": {
+      "edge_5": {"response_time_ms": 22, "throughput_mbps": 86},
+      "edge_3": {"response_time_ms": 30, "throughput_mbps": 80},
+      "edge_4": {"response_time_ms": 47, "throughput_mbps": 61}
+    },
+    "SEG_13": {
+      "edge_4": {"response_time_ms": 21, "throughput_mbps": 87},
+      "edge_2": {"response_time_ms": 37, "throughput_mbps": 72},
+      "edge_5": {"response_time_ms": 48, "throughput_mbps": 60}
+    }
+  }
+}

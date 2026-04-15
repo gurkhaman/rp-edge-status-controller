@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.python-version
+
+.idea/
+.vscode/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.DS_Store
+
+topology_overlay.html
+dashboard_state.json.tmp
