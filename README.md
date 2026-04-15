@@ -1,6 +1,8 @@
-# BECS ITRC 0415
+# rp-edge-status-controller
 
 FastAPI-based TurtleBot server selection monitor. The app visualizes a fixed route over a testbed map, tracks the robot's current waypoint, ranks candidate edge servers for the active segment, and recommends the best next server based on per-segment QoS data.
+
+Developed by JBNU.
 
 ## Overview
 

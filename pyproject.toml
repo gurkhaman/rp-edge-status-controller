@@ -1,5 +1,5 @@
 [project]
-name = "becs-itrc-0415"
+name = "rp-edge-status-controller"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
