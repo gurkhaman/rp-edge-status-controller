@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
+from urllib.error import HTTPError
 from urllib.request import urlopen
 
 from fastapi import FastAPI, HTTPException
@@ -346,7 +347,23 @@ def sync_edge_led_status(
     endpoint = f"{base_url}/status/{led_state}"
     try:
         with urlopen(endpoint, timeout=LED_SYNC_TIMEOUT_SECONDS) as response:
-            response.read()
+            body = response.read().decode("utf-8", errors="replace").strip()
+            logger.info(
+                "Pi status sync for %s via %s returned %s: %s",
+                server_id,
+                endpoint,
+                response.status,
+                body,
+            )
+    except HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace").strip()
+        logger.warning(
+            "Pi status sync for %s via %s failed with %s: %s",
+            server_id,
+            endpoint,
+            exc.code,
+            body,
+        )
     except Exception as exc:
         logger.warning(
             "Failed to sync %s to %s via %s: %s", server_id, led_state, endpoint, exc
