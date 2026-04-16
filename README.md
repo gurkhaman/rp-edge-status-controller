@@ -40,7 +40,7 @@ Run the small topology smoke check:
 uv run python main.py
 ```
 
-Start the API and dashboard:
+Run the controller server:
 
 ```bash
 uv run uvicorn server:app --reload --port 8765 --no-access-log
@@ -51,6 +51,17 @@ Open:
 - Dashboard: `http://127.0.0.1:8765/`
 - Health check: `http://127.0.0.1:8765/api/v1/health`
 
+Run the ROS sidecar from your ROS workspace after copying
+`ros_packages/rp_edge_status_bridge` into `src/` and building it:
+
+```bash
+source /opt/ros/<distro>/setup.bash
+cd <your_ros_ws>
+colcon build --packages-select rp_edge_status_bridge
+source install/setup.bash
+ros2 launch rp_edge_status_bridge telemetry_bridge.launch.py controller_url:=http://<controller-host>:8765/api/v1/telemetry
+```
+
 ## Project Files
 
 - `server.py`: FastAPI app, mock loop, API handlers, server ranking logic
@@ -59,7 +70,28 @@ Open:
 - `testbed_topology.py`: helper module that loads topology into Python data structures
 - `main.py`: simple smoke-check script that prints the loaded topology summary
 - `instructions.txt`: manual testing notes and example requests from the original handoff
+- `ros_packages/rp_edge_status_bridge`: ROS 2 sidecar package that forwards ROS topics to the controller
 - `topology_overlay.html`: generated output; do not hand-edit
+
+## ROS Sidecar Package
+
+This repo also includes a standalone ROS 2 package at:
+
+- `ros_packages/rp_edge_status_bridge`
+
+The package is intentionally self-contained so you can copy just that folder into an
+existing ROS workspace and build it there.
+
+Typical flow:
+
+```bash
+cp -r ros_packages/rp_edge_status_bridge <your_ros_ws>/src/
+cd <your_ros_ws>
+source /opt/ros/<distro>/setup.bash
+colcon build --packages-select rp_edge_status_bridge
+source install/setup.bash
+ros2 launch rp_edge_status_bridge telemetry_bridge.launch.py controller_url:=http://<controller-host>:8765/api/v1/telemetry
+```
 
 ## API Summary
 
