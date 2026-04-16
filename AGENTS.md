@@ -5,7 +5,7 @@
 
 # Entry Points
 
-- `server.py` is the live app entrypoint. Start it with `uv run uvicorn server:app --reload --port 8765`. `instructions.txt` uses `--no-access-log` for quieter manual testing.
+- `server.py` is the live app entrypoint. Start it with `uv run uvicorn server:app --reload --host 0.0.0.0 --port 8765`. `instructions.txt` uses `--no-access-log` for quieter manual testing.
 - `visualize_topology.py` is the source for the dashboard HTML template. `topology_overlay.html` is generated output; do not hand-edit it.
 - `main.py` is a small smoke-check script that prints the loaded topology summary.
 
@@ -32,7 +32,7 @@
 - There is no repo-local `pytest`, lint, typecheck, formatter, or CI config. Use focused smoke checks instead.
 - `uv run python main.py` verifies the topology loads and segments resolve.
 - `uv run python visualize_topology.py` rewrites `topology_overlay.html`; despite the defined CLI flags, the current `main()` only writes the file and prints the `uvicorn` command.
-- For app checks, run `uv run uvicorn server:app --reload --port 8765` and hit `GET /api/v1/health`.
+- For app checks, run `uv run uvicorn server:app --reload --host 0.0.0.0 --port 8765` and hit `GET /api/v1/health`.
 
 # Ignore
 

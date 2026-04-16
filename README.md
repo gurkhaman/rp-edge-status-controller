@@ -43,13 +43,14 @@ uv run python main.py
 Run the controller server:
 
 ```bash
-uv run uvicorn server:app --reload --port 8765 --no-access-log
+uv run uvicorn server:app --reload --host 0.0.0.0 --port 8765 --no-access-log
 ```
 
 Open:
 
-- Dashboard: `http://127.0.0.1:8765/`
-- Health check: `http://127.0.0.1:8765/api/v1/health`
+- Dashboard (local): `http://127.0.0.1:8765/`
+- Dashboard (LAN): `http://<controller-host>:8765/`
+- Health check (local): `http://127.0.0.1:8765/api/v1/health`
 
 Run the ROS sidecar from your ROS workspace after copying
 `ros_packages/rp_edge_status_bridge` into `src/` and building it:
@@ -172,6 +173,7 @@ curl -X POST http://127.0.0.1:8765/api/v1/topology/reload
 - Topology waypoint IDs are now `Cone_*`, derived from `isaacsim_cones_waypoints.json` and projected into the existing dashboard pixel frame.
 - `testbed_topology.json` keeps the old `P_*` waypoint block as `//` comments for reference; the loaders ignore comment lines.
 - After editing `testbed_topology.json`, reload the topology via the API or restart the app.
+- Start `uvicorn` with `--host 0.0.0.0` when other machines need to reach the controller over the LAN.
 - `visualize_topology.py` is the HTML source. `topology_overlay.html` is generated output.
 
 ## Important Quirks
@@ -188,7 +190,7 @@ Recommended smoke checks:
 
 ```bash
 uv run python main.py
-uv run uvicorn server:app --reload --port 8765 --no-access-log
+uv run uvicorn server:app --reload --host 0.0.0.0 --port 8765 --no-access-log
 ```
 
 Then verify:

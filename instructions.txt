@@ -28,7 +28,7 @@ mock mode만 testbed_topology.json의 route 필드 사용
 
 
 웹 실행 (현재는 10초 간격으로 경로 갱신)
-uvicorn server:app --reload --port 8765 --no-access-log
+uv run uvicorn server:app --reload --host 0.0.0.0 --port 8765 --no-access-log
 
 서버 다운/복구 테스트
 Invoke-WebRequest -Uri "http://127.0.0.1:8765/api/server-health" -Method POST -Body (@{server_id="edge_1"; status="down"} | ConvertTo-Json) -ContentType "application/json"

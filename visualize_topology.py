@@ -922,7 +922,9 @@ def main() -> None:
     args = parse_args()
     output_path = write_html()
     print(f"Wrote {output_path}")
-    print("Run the live dashboard with: uvicorn server:app --reload --port 8765")
+    print(
+        "Run the live dashboard with: uv run uvicorn server:app --reload --host 0.0.0.0 --port 8765"
+    )
 
 
 if __name__ == "__main__":
