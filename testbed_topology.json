@@ -8,16 +8,27 @@
     "unit": "pixel"
   },
   "waypoints": [
-    {"id": "P_01", "x": 18, "y": 920, "label": "corner_south_west"},
-    {"id": "P_02", "x": 18, "y": 61, "label": "corner_north_west"},
-    {"id": "P_03", "x": 370, "y": 61, "label": "junction_north_left"},
-    {"id": "P_04", "x": 1030, "y": 61, "label": "junction_north_right"},
-    {"id": "P_05", "x": 1515, "y": 61, "label": "corner_north_east"},
-    {"id": "P_06", "x": 1515, "y": 420, "label": "junction_east_upper"},
-    {"id": "P_07", "x": 1515, "y": 920, "label": "corner_south_east"},
-    {"id": "P_08", "x": 370, "y": 920, "label": "junction_south_left"},
-    {"id": "P_09", "x": 370, "y": 420, "label": "junction_inner_left"},
-    {"id": "P_10", "x": 1030, "y": 420, "label": "junction_inner_right"}
+    // Legacy P_* waypoint definitions kept for reference while the topology uses Cone_*.
+    // {"id": "P_01", "x": 18, "y": 920, "label": "corner_south_west"},
+    // {"id": "P_02", "x": 18, "y": 61, "label": "corner_north_west"},
+    // {"id": "P_03", "x": 370, "y": 61, "label": "junction_north_left"},
+    // {"id": "P_04", "x": 1030, "y": 61, "label": "junction_north_right"},
+    // {"id": "P_05", "x": 1515, "y": 61, "label": "corner_north_east"},
+    // {"id": "P_06", "x": 1515, "y": 420, "label": "junction_east_upper"},
+    // {"id": "P_07", "x": 1515, "y": 920, "label": "corner_south_east"},
+    // {"id": "P_08", "x": 370, "y": 920, "label": "junction_south_left"},
+    // {"id": "P_09", "x": 370, "y": 420, "label": "junction_inner_left"},
+    // {"id": "P_10", "x": 1030, "y": 420, "label": "junction_inner_right"}
+    {"id": "Cone_01", "x": 667, "y": 61, "label": "cone_01", "sequence": 1, "type": "cone", "world_x": 0.8183599710464478, "world_y": 0.941569983959198, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_01"},
+    {"id": "Cone_02", "x": 667, "y": 458, "label": "cone_02", "sequence": 2, "type": "cone", "world_x": 0.8183621168136597, "world_y": 0.5085200071334839, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_02"},
+    {"id": "Cone_03", "x": 1102, "y": 458, "label": "cone_03", "sequence": 3, "type": "cone", "world_x": 1.2850799560546875, "world_y": 0.5085200071334839, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_03"},
+    {"id": "Cone_04", "x": 1515, "y": 458, "label": "cone_04", "sequence": 4, "type": "cone", "world_x": 1.728410005569458, "world_y": 0.5085170269012451, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_04"},
+    {"id": "Cone_05", "x": 1515, "y": 920, "label": "cone_05", "sequence": 5, "type": "cone", "world_x": 1.728410005569458, "world_y": 0.004628363065421581, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_05"},
+    {"id": "Cone_06", "x": 667, "y": 920, "label": "cone_06", "sequence": 6, "type": "cone", "world_x": 0.8183599710464478, "world_y": 0.004629999864846468, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_06"},
+    {"id": "Cone_07", "x": 18, "y": 920, "label": "cone_07", "sequence": 7, "type": "cone", "world_x": 0.12128932774066925, "world_y": 0.004629999864846468, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_07"},
+    {"id": "Cone_08", "x": 38, "y": 61, "label": "cone_08", "sequence": 8, "type": "cone", "world_x": 0.14323027431964874, "world_y": 0.941569983959198, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_08"},
+    {"id": "Cone_09", "x": 1102, "y": 61, "label": "cone_09", "sequence": 9, "type": "cone", "world_x": 1.2850773334503174, "world_y": 0.941569983959198, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_09"},
+    {"id": "Cone_10", "x": 1515, "y": 61, "label": "cone_10", "sequence": 10, "type": "cone", "world_x": 1.728410005569458, "world_y": 0.941569983959198, "world_z": 0.037800028920173645, "radius": 0.12, "prim_path": "/World/Group/Cone_10"}
   ],
   "edge_servers": [
     {"id": "edge_1", "x": 190, "y": 405, "label": "west_edge"},
@@ -27,27 +38,27 @@
     {"id": "edge_5", "x": 1215, "y": 685, "label": "south_east_edge"}
   ],
   "route": [
-    "P_02",
-    "P_01",
-    "P_08",
-    "P_07",
-    "P_06",
-    "P_05"
+    "Cone_08",
+    "Cone_07",
+    "Cone_06",
+    "Cone_05",
+    "Cone_04",
+    "Cone_10"
   ],
   "segments": [
-    {"id": "SEG_01", "from": "P_01", "to": "P_02", "candidate_servers": ["edge_1", "edge_4", "edge_2"]},
-    {"id": "SEG_02", "from": "P_02", "to": "P_03", "candidate_servers": ["edge_1", "edge_2", "edge_4"]},
-    {"id": "SEG_03", "from": "P_03", "to": "P_04", "candidate_servers": ["edge_2", "edge_3", "edge_1"]},
-    {"id": "SEG_04", "from": "P_04", "to": "P_05", "candidate_servers": ["edge_3", "edge_2", "edge_5"]},
-    {"id": "SEG_05", "from": "P_05", "to": "P_06", "candidate_servers": ["edge_3", "edge_5", "edge_2"]},
-    {"id": "SEG_06", "from": "P_06", "to": "P_07", "candidate_servers": ["edge_5", "edge_3", "edge_4"]},
-    {"id": "SEG_07", "from": "P_07", "to": "P_08", "candidate_servers": ["edge_5", "edge_4", "edge_3"]},
-    {"id": "SEG_08", "from": "P_08", "to": "P_09", "candidate_servers": ["edge_4", "edge_1", "edge_5"]},
-    {"id": "SEG_09", "from": "P_08", "to": "P_01", "candidate_servers": ["edge_4", "edge_1", "edge_2"]},
-    {"id": "SEG_10", "from": "P_03", "to": "P_09", "candidate_servers": ["edge_2", "edge_4", "edge_1"]},
-    {"id": "SEG_11", "from": "P_04", "to": "P_10", "candidate_servers": ["edge_2", "edge_3", "edge_5"]},
-    {"id": "SEG_12", "from": "P_06", "to": "P_10", "candidate_servers": ["edge_5", "edge_3", "edge_4"]},
-    {"id": "SEG_13", "from": "P_09", "to": "P_10", "candidate_servers": ["edge_4", "edge_2", "edge_5"]}
+    {"id": "SEG_01", "from": "Cone_07", "to": "Cone_08", "candidate_servers": ["edge_1", "edge_4", "edge_2"]},
+    {"id": "SEG_02", "from": "Cone_08", "to": "Cone_01", "candidate_servers": ["edge_1", "edge_2", "edge_4"]},
+    {"id": "SEG_03", "from": "Cone_01", "to": "Cone_09", "candidate_servers": ["edge_2", "edge_3", "edge_1"]},
+    {"id": "SEG_04", "from": "Cone_09", "to": "Cone_10", "candidate_servers": ["edge_3", "edge_2", "edge_5"]},
+    {"id": "SEG_05", "from": "Cone_10", "to": "Cone_04", "candidate_servers": ["edge_3", "edge_5", "edge_2"]},
+    {"id": "SEG_06", "from": "Cone_04", "to": "Cone_05", "candidate_servers": ["edge_5", "edge_3", "edge_4"]},
+    {"id": "SEG_07", "from": "Cone_05", "to": "Cone_06", "candidate_servers": ["edge_5", "edge_4", "edge_3"]},
+    {"id": "SEG_08", "from": "Cone_06", "to": "Cone_02", "candidate_servers": ["edge_4", "edge_1", "edge_5"]},
+    {"id": "SEG_09", "from": "Cone_06", "to": "Cone_07", "candidate_servers": ["edge_4", "edge_1", "edge_2"]},
+    {"id": "SEG_10", "from": "Cone_01", "to": "Cone_02", "candidate_servers": ["edge_2", "edge_4", "edge_1"]},
+    {"id": "SEG_11", "from": "Cone_09", "to": "Cone_03", "candidate_servers": ["edge_2", "edge_3", "edge_5"]},
+    {"id": "SEG_12", "from": "Cone_04", "to": "Cone_03", "candidate_servers": ["edge_5", "edge_3", "edge_4"]},
+    {"id": "SEG_13", "from": "Cone_02", "to": "Cone_03", "candidate_servers": ["edge_4", "edge_2", "edge_5"]}
   ],
   "segment_qos": {
     "SEG_01": {

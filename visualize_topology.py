@@ -433,7 +433,7 @@ def render_html() -> str:
     <aside class="dashboard">
       <h1>Server Dashboard</h1>
       <div class="kv">
-        <div class="key">Location</div><div id="waypoint" class="value">-</div>
+        <div class="key">Destination</div><div id="waypoint" class="value">-</div>
       </div>
 
       <h2>Current</h2>
@@ -725,7 +725,7 @@ def render_html() -> str:
 
     function waypointShortLabel(waypointId) {
       const match = String(waypointId || "").match(/(\\d+)$/);
-      return match ? `P${Number(match[1])}` : displayId(waypointId);
+      return match ? `C${Number(match[1])}` : displayId(waypointId);
     }
 
     function addWaypointPill(svg, waypoint, dx, dy) {
@@ -761,12 +761,12 @@ def render_html() -> str:
         addWaypointPill(svg, end, 30, 0);
         return;
       }
-      if (start.id === "WP_07" || start.id === "P_07") {
+      if (start.id === "WP_07" || start.id === "P_07" || start.id === "Cone_05") {
         addWaypointPill(svg, start, -30, 0);
       } else {
         addWaypointPill(svg, start, dx >= 0 ? -30 : 30, 0);
       }
-      if (end.id === "WP_07" || end.id === "P_07") {
+      if (end.id === "WP_07" || end.id === "P_07" || end.id === "Cone_05") {
         addWaypointPill(svg, end, -30, 0);
       } else {
         addWaypointPill(svg, end, dx >= 0 ? 30 : -30, 0);
@@ -797,7 +797,8 @@ def render_html() -> str:
       }
       const robot = state.robot || {};
       const nextSegment = state.next_segment || {};
-      document.getElementById("waypoint").textContent = displayWaypoint(robot.current_waypoint) || "-";
+      document.getElementById("waypoint").textContent =
+        displayWaypoint(robot.current_destination || robot.current_waypoint) || "-";
       document.getElementById("current-segment").textContent =
         state.current_segment ? displaySegment(state.current_segment) : "-";
       document.getElementById("assigned-server").innerHTML = serverToken(state.current_assigned_server, "assigned");
@@ -868,7 +869,9 @@ def render_html() -> str:
 </body>
 </html>
 """
-    return html.replace("__TOPOLOGY_API__", "/api/v1/topology").replace("__STATE_API__", "/api/v1/state")
+    return html.replace("__TOPOLOGY_API__", "/api/v1/topology").replace(
+        "__STATE_API__", "/api/v1/state"
+    )
 
 
 def write_html() -> Path:
@@ -885,7 +888,9 @@ def serve(port: int, open_browser: bool, verbose: bool) -> None:
     url = f"http://127.0.0.1:{server.server_port}/{OUTPUT_HTML}"
     print(f"Wrote {output_path}")
     print(f"Serving {url}")
-    print("The browser loads testbed_topology.json once, then advances the route index locally.")
+    print(
+        "The browser loads testbed_topology.json once, then advances the route index locally."
+    )
     if open_browser:
         webbrowser.open(url)
     try:
@@ -896,10 +901,20 @@ def serve(port: int, open_browser: bool, verbose: bool) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Write the dashboard HTML template.")
-    parser.add_argument("--no-open", action="store_true", help="start without opening a browser")
-    parser.add_argument("--write-only", action="store_true", help="write the HTML file without starting the server")
-    parser.add_argument("--port", type=int, default=8765, help="local dashboard server port")
-    parser.add_argument("--verbose", action="store_true", help="print every HTTP request")
+    parser.add_argument(
+        "--no-open", action="store_true", help="start without opening a browser"
+    )
+    parser.add_argument(
+        "--write-only",
+        action="store_true",
+        help="write the HTML file without starting the server",
+    )
+    parser.add_argument(
+        "--port", type=int, default=8765, help="local dashboard server port"
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="print every HTTP request"
+    )
     return parser.parse_args()
 
 

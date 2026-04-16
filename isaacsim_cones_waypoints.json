@@ -1,0 +1,128 @@
+{
+  "coordinate_system": {
+    "name": "isaac_sim_world",
+    "frame_id": "world",
+    "units": "meters",
+    "description": "World-space cone waypoint coordinates exported from the open Isaac Sim stage."
+  },
+  "source": {
+    "usd_stage": "file:/home/webeng/Desktop/turtlebot3.usd",
+    "exporter": "turtlebot3_waypoints/isaac/export_cone_waypoints.py"
+  },
+  "robot_initial_pose": {
+    "id": "turtlebot3_burger_01",
+    "type": "robot_initial_pose",
+    "x": 1.7284088134765625,
+    "y": 0.9415729641914368,
+    "z": -0.003033894579857588,
+    "orientation": {
+      "w": 6.123234262925839e-17,
+      "x": 0.0,
+      "y": 0.0,
+      "z": 1.0
+    },
+    "prim_path": "/World/turtlebot3_burger_01"
+  },
+  "waypoints": [
+    {
+      "id": "Cone_01",
+      "sequence": 1,
+      "type": "cone",
+      "x": 0.8183599710464478,
+      "y": 0.941569983959198,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_01"
+    },
+    {
+      "id": "Cone_02",
+      "sequence": 2,
+      "type": "cone",
+      "x": 0.8183621168136597,
+      "y": 0.5085200071334839,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_02"
+    },
+    {
+      "id": "Cone_03",
+      "sequence": 3,
+      "type": "cone",
+      "x": 1.2850799560546875,
+      "y": 0.5085200071334839,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_03"
+    },
+    {
+      "id": "Cone_04",
+      "sequence": 4,
+      "type": "cone",
+      "x": 1.728410005569458,
+      "y": 0.5085170269012451,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_04"
+    },
+    {
+      "id": "Cone_05",
+      "sequence": 5,
+      "type": "cone",
+      "x": 1.728410005569458,
+      "y": 0.004628363065421581,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_05"
+    },
+    {
+      "id": "Cone_06",
+      "sequence": 6,
+      "type": "cone",
+      "x": 0.8183599710464478,
+      "y": 0.004629999864846468,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_06"
+    },
+    {
+      "id": "Cone_07",
+      "sequence": 7,
+      "type": "cone",
+      "x": 0.12128932774066925,
+      "y": 0.004629999864846468,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_07"
+    },
+    {
+      "id": "Cone_08",
+      "sequence": 8,
+      "type": "cone",
+      "x": 0.14323027431964874,
+      "y": 0.941569983959198,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_08"
+    },
+    {
+      "id": "Cone_09",
+      "sequence": 9,
+      "type": "cone",
+      "x": 1.2850773334503174,
+      "y": 0.941569983959198,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_09"
+    },
+    {
+      "id": "Cone_10",
+      "sequence": 10,
+      "type": "cone",
+      "x": 1.728410005569458,
+      "y": 0.941569983959198,
+      "z": 0.037800028920173645,
+      "radius": 0.12,
+      "prim_path": "/World/Group/Cone_10"
+    }
+  ]
+}

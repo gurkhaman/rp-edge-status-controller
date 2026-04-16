@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from math import hypot
 from pathlib import Path
 from typing import Iterable
+
+from topology_loader import load_topology_json
 
 
 TOPOLOGY_JSON = "testbed_topology.json"
@@ -35,7 +36,7 @@ class RouteSegment:
 
 
 def load_topology() -> dict:
-    return json.loads(Path(TOPOLOGY_JSON).read_text(encoding="utf-8-sig"))
+    return load_topology_json(Path(TOPOLOGY_JSON))
 
 
 _TOPOLOGY = load_topology()
@@ -73,13 +74,21 @@ def waypoint_distance(a: Waypoint, b: Waypoint) -> float:
 
 
 def segment_length(segment: RouteSegment) -> float:
-    return waypoint_distance(WAYPOINTS[segment.from_waypoint], WAYPOINTS[segment.to_waypoint])
+    return waypoint_distance(
+        WAYPOINTS[segment.from_waypoint], WAYPOINTS[segment.to_waypoint]
+    )
 
 
 def find_segment(from_waypoint: str, to_waypoint: str) -> RouteSegment:
     for segment in SEGMENTS:
-        is_forward = segment.from_waypoint == from_waypoint and segment.to_waypoint == to_waypoint
-        is_reverse = segment.from_waypoint == to_waypoint and segment.to_waypoint == from_waypoint
+        is_forward = (
+            segment.from_waypoint == from_waypoint
+            and segment.to_waypoint == to_waypoint
+        )
+        is_reverse = (
+            segment.from_waypoint == to_waypoint
+            and segment.to_waypoint == from_waypoint
+        )
         if is_forward or is_reverse:
             return segment
     raise KeyError(f"No route segment between {from_waypoint!r} and {to_waypoint!r}.")
@@ -87,7 +96,9 @@ def find_segment(from_waypoint: str, to_waypoint: str) -> RouteSegment:
 
 def route_segment_at(route_index: int) -> RouteSegment:
     if route_index < 0 or route_index >= len(ROUTE) - 1:
-        raise IndexError(f"Route index {route_index} is outside the movable route range.")
+        raise IndexError(
+            f"Route index {route_index} is outside the movable route range."
+        )
     return find_segment(ROUTE[route_index], ROUTE[route_index + 1])
 
 
@@ -95,7 +106,8 @@ def next_segments(current_waypoint: str) -> tuple[RouteSegment, ...]:
     return tuple(
         segment
         for segment in SEGMENTS
-        if segment.from_waypoint == current_waypoint or segment.to_waypoint == current_waypoint
+        if segment.from_waypoint == current_waypoint
+        or segment.to_waypoint == current_waypoint
     )
 
 
@@ -103,7 +115,9 @@ def active_candidate_servers(
     segment: RouteSegment, down_servers: Iterable[str] = ()
 ) -> tuple[str, ...]:
     down = set(down_servers)
-    return tuple(server_id for server_id in segment.candidate_servers if server_id not in down)
+    return tuple(
+        server_id for server_id in segment.candidate_servers if server_id not in down
+    )
 
 
 def recommend_server(
@@ -114,4 +128,6 @@ def recommend_server(
     candidates = active_candidate_servers(segment, down_servers)
     if not candidates:
         raise ValueError(f"No active candidate server for {segment.id}.")
-    return max(candidates, key=lambda server_id: qos_scores.get(server_id, float("-inf")))
+    return max(
+        candidates, key=lambda server_id: qos_scores.get(server_id, float("-inf"))
+    )

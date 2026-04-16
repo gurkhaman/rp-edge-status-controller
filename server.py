@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -14,6 +13,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
+from topology_loader import load_topology_json
 from visualize_topology import render_html
 
 
@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 class TelemetryPayload(BaseModel):
     robot_id: str = "turtlebot_1"
     current_waypoint: str | None = None
+    current_destination: str | None = None
+    waypoint_sequence: list[str] | None = None
 
 
 # 다운된 서버 id와 상태
@@ -63,7 +65,8 @@ class SegmentState(BaseModel):
 class RobotState(BaseModel):
     id: str
     route_index: int
-    current_waypoint: str
+    current_waypoint: str | None = None
+    current_destination: str | None = None
     x: float
     y: float
 
@@ -80,7 +83,7 @@ class MonitorStateResponse(BaseModel):
     source: str
     mock_enabled: bool
     robot: RobotState
-    current_segment: SegmentState
+    current_segment: SegmentState | None = None
     current_assigned_server: str | None = None
     next_segment: SegmentState | None = None
     recommended_server: str | None = None
@@ -106,6 +109,9 @@ class MonitorState:
         self.topology = load_topology()
         self.route_index = 0
         self.robot_id = "turtlebot_1"
+        self.current_destination: str | None = None
+        self.waypoint_sequence: list[str] | None = None
+        self.sequence_index: int | None = None
         self.robot_x: float | None = None
         self.robot_y: float | None = None
         self.down_servers: set[str] = set()
@@ -120,12 +126,55 @@ class MonitorState:
         self.mock_enabled = False
         self.robot_id = telemetry.robot_id
 
-        ensure_waypoint_exists(self.topology, telemetry.current_waypoint)
-        self.route_index = route_index_from_waypoint(
-            self.topology,
-            telemetry.current_waypoint,
-            self.route_index,
-        )
+        if (
+            telemetry.current_destination is not None
+            or telemetry.waypoint_sequence is not None
+        ):
+            if (
+                telemetry.current_destination is None
+                or telemetry.waypoint_sequence is None
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="current_destination and waypoint_sequence must be provided together",
+                )
+
+            waypoint_sequence = normalize_waypoint_sequence(
+                self.topology, telemetry.waypoint_sequence
+            )
+            current_destination = resolve_waypoint_id(
+                self.topology, telemetry.current_destination
+            )
+            sequence_index = resolve_sequence_index(
+                waypoint_sequence,
+                current_destination,
+                self.waypoint_sequence,
+                self.sequence_index,
+            )
+
+            self.current_destination = current_destination
+            self.waypoint_sequence = waypoint_sequence
+            self.sequence_index = sequence_index
+        elif telemetry.current_waypoint is not None:
+            current_waypoint = resolve_waypoint_id(
+                self.topology, telemetry.current_waypoint
+            )
+            self.current_destination = None
+            self.waypoint_sequence = None
+            self.sequence_index = None
+            self.route_index = route_index_from_waypoint(
+                self.topology,
+                current_waypoint,
+                self.route_index,
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Telemetry must include current_destination with waypoint_sequence "
+                    "or a legacy current_waypoint"
+                ),
+            )
 
         return self.build_and_sync_state(source="telemetry")
 
@@ -157,31 +206,44 @@ class MonitorState:
         return monitor_state
 
     def build_state(self, source: str = "memory") -> MonitorStateResponse:
-        route = self.topology["route"]
-        route_index = clamp_route_index(self.topology, self.route_index)
-        current_from = route[route_index]
-        current_to = route[route_index + 1]
-        current_segment = segment_between(self.topology, current_from, current_to)
-
-        if route_index + 2 < len(route):
-            next_segment = segment_between(
-                self.topology, route[route_index + 1], route[route_index + 2]
+        if (
+            not self.mock_enabled
+            and self.waypoint_sequence is not None
+            and self.current_destination is not None
+            and self.sequence_index is not None
+        ):
+            route_state = build_dynamic_route_state(
+                self.topology,
+                self.waypoint_sequence,
+                self.sequence_index,
             )
         else:
-            next_segment = None
+            route_state = build_static_route_state(self.topology, self.route_index)
+
+        current_segment = route_state["current_segment"]
+        next_segment = route_state["next_segment"]
 
         target_segment = next_segment or current_segment
+        if target_segment is None:
+            raise HTTPException(
+                status_code=400, detail="Active route must contain at least one segment"
+            )
+
         ranking = build_ranking(
             self.topology,
             target_segment["id"],
             target_segment["candidate_servers"],
             self.down_servers,
         )
-        current_ranking = build_ranking(
-            self.topology,
-            current_segment["id"],
-            current_segment["candidate_servers"],
-            self.down_servers,
+        current_ranking = (
+            build_ranking(
+                self.topology,
+                current_segment["id"],
+                current_segment["candidate_servers"],
+                self.down_servers,
+            )
+            if current_segment is not None
+            else []
         )
 
         recommended = next(
@@ -191,7 +253,7 @@ class MonitorState:
             (item.server_id for item in current_ranking if item.status == "active"),
             None,
         )
-        waypoint = waypoint_by_id(self.topology, current_from)
+        waypoint = waypoint_by_id(self.topology, route_state["coordinate_waypoint"])
         robot_x = self.robot_x if self.robot_x is not None else waypoint["x"]
         robot_y = self.robot_y if self.robot_y is not None else waypoint["y"]
 
@@ -201,12 +263,15 @@ class MonitorState:
             mock_enabled=self.mock_enabled,
             robot=RobotState(
                 id=self.robot_id,
-                route_index=route_index,
-                current_waypoint=current_from,
+                route_index=route_state["route_index"],
+                current_waypoint=route_state["current_waypoint"],
+                current_destination=route_state["current_destination"],
                 x=robot_x,
                 y=robot_y,
             ),
-            current_segment=SegmentState(**current_segment),
+            current_segment=SegmentState(**current_segment)
+            if current_segment
+            else None,
             current_assigned_server=assigned,
             next_segment=SegmentState(**next_segment) if next_segment else None,
             recommended_server=recommended,
@@ -216,7 +281,7 @@ class MonitorState:
 
 
 def load_topology() -> dict[str, Any]:
-    topology = json.loads((BASE_DIR / TOPOLOGY_JSON).read_text(encoding="utf-8-sig"))
+    topology = load_topology_json(BASE_DIR / TOPOLOGY_JSON)
     if "edge_servers" not in topology and "servers" in topology:
         topology["edge_servers"] = topology["servers"]
     if "servers" not in topology and "edge_servers" in topology:
@@ -241,10 +306,111 @@ def route_index_from_waypoint(
         return clamp_route_index(topology, fallback)
 
 
-def ensure_waypoint_exists(topology: dict[str, Any], waypoint_id: str) -> None:
+def build_static_route_state(
+    topology: dict[str, Any], route_index: int
+) -> dict[str, Any]:
+    route = topology["route"]
+    route_index = clamp_route_index(topology, route_index)
+    current_waypoint = route[route_index]
+    current_destination = route[route_index + 1]
+    current_segment = segment_between(topology, current_waypoint, current_destination)
+    next_segment = None
+    if route_index + 2 < len(route):
+        next_segment = segment_between(
+            topology,
+            route[route_index + 1],
+            route[route_index + 2],
+        )
+
+    return {
+        "route_index": route_index + 1,
+        "current_waypoint": current_waypoint,
+        "current_destination": current_destination,
+        "current_segment": current_segment,
+        "next_segment": next_segment,
+        "coordinate_waypoint": current_waypoint,
+    }
+
+
+def build_dynamic_route_state(
+    topology: dict[str, Any], waypoint_sequence: list[str], sequence_index: int
+) -> dict[str, Any]:
+    current_destination = waypoint_sequence[sequence_index]
+    current_waypoint = (
+        waypoint_sequence[sequence_index - 1] if sequence_index > 0 else None
+    )
+    current_segment = (
+        segment_between(topology, current_waypoint, current_destination)
+        if current_waypoint is not None
+        else None
+    )
+    next_segment = None
+    if sequence_index + 1 < len(waypoint_sequence):
+        next_segment = segment_between(
+            topology,
+            current_destination,
+            waypoint_sequence[sequence_index + 1],
+        )
+
+    return {
+        "route_index": sequence_index,
+        "current_waypoint": current_waypoint,
+        "current_destination": current_destination,
+        "current_segment": current_segment,
+        "next_segment": next_segment,
+        "coordinate_waypoint": current_waypoint or current_destination,
+    }
+
+
+def resolve_waypoint_id(topology: dict[str, Any], waypoint_id: str) -> str:
     valid_waypoints = {wp["id"] for wp in topology["waypoints"]}
-    if waypoint_id not in valid_waypoints:
-        raise HTTPException(status_code=400, detail=f"Unknown waypoint: {waypoint_id}")
+    if waypoint_id in valid_waypoints:
+        return waypoint_id
+
+    raise HTTPException(status_code=400, detail=f"Unknown waypoint: {waypoint_id}")
+
+
+def normalize_waypoint_sequence(
+    topology: dict[str, Any], waypoint_sequence: list[str]
+) -> list[str]:
+    if len(waypoint_sequence) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="waypoint_sequence must contain at least two waypoints",
+        )
+
+    normalized_sequence = [
+        resolve_waypoint_id(topology, waypoint_id) for waypoint_id in waypoint_sequence
+    ]
+    for from_waypoint, to_waypoint in zip(
+        normalized_sequence, normalized_sequence[1:], strict=False
+    ):
+        segment_between(topology, from_waypoint, to_waypoint)
+    return normalized_sequence
+
+
+def resolve_sequence_index(
+    waypoint_sequence: list[str],
+    current_destination: str,
+    previous_sequence: list[str] | None,
+    previous_index: int | None,
+) -> int:
+    if previous_sequence == waypoint_sequence and previous_index is not None:
+        for index in range(previous_index, len(waypoint_sequence)):
+            if waypoint_sequence[index] == current_destination:
+                return index
+
+    try:
+        return waypoint_sequence.index(current_destination)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"current_destination is not present in waypoint_sequence: {current_destination}",
+        ) from exc
+
+
+def ensure_waypoint_exists(topology: dict[str, Any], waypoint_id: str) -> None:
+    resolve_waypoint_id(topology, waypoint_id)
 
 
 def waypoint_by_id(topology: dict[str, Any], waypoint_id: str) -> dict[str, Any]:
