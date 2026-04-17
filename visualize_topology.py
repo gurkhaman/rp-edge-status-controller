@@ -548,6 +548,14 @@ def render_html() -> str:
       return displayId(segment.id);
     }
 
+    function rotate180(point, frame) {
+      return {
+        ...point,
+        x: frame.width - point.x,
+        y: frame.height - point.y,
+      };
+    }
+
     async function postJson(source, payload) {
       const response = await fetch(source, {
         method: "POST",
@@ -613,7 +621,10 @@ def render_html() -> str:
       svg.replaceChildren();
       svg.setAttribute("viewBox", `0 0 ${frame.width} ${frame.height}`);
 
-      const waypoints = Object.fromEntries(topology.waypoints.map((waypoint) => [waypoint.id, waypoint]));
+      const waypoints = Object.fromEntries(
+        topology.waypoints.map((waypoint) => [waypoint.id, rotate180(waypoint, frame)])
+      );
+      const edgeServers = topology.edge_servers.map((server) => rotate180(server, frame));
 
       for (const segment of topology.segments) {
         const start = waypoints[segment.from];
@@ -651,7 +662,7 @@ def render_html() -> str:
 
       const recommended = state && state.recommended_server;
       const downServers = new Set((state && state.down_servers) || []);
-      for (const server of topology.edge_servers) {
+      for (const server of edgeServers) {
         const serverGroup = makeSvg("g", {
           class: pendingServerUpdates.has(server.id) ? "edge-server-toggle busy" : "edge-server-toggle",
           role: "button",
