@@ -38,6 +38,8 @@
     {"id": "edge_5", "x": 1215, "y": 685, "label": "south_east_edge"}
   ],
   "route": [
+    "Cone_09",
+    "Cone_01",
     "Cone_08",
     "Cone_07",
     "Cone_06",

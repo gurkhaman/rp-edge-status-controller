@@ -84,7 +84,7 @@ def render_html() -> str:
       display: block;
       width: 100%;
       height: 100%;
-      background: #000 url("/background.png") center / 100% 100% no-repeat;
+      background: linear-gradient(rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.34)), #000 url("/background.png") center / 100% 100% no-repeat;
     }
     h1, h2 {
       margin: 0;
@@ -327,11 +327,11 @@ def render_html() -> str:
     }
     .edge-server.recommended-server {
       stroke: #102a16;
-      stroke-width: 3;
+      stroke-width: 4;
     }
     .edge-server.down-server {
       stroke: #f44336;
-      stroke-width: 2;
+      stroke-width: 3;
     }
     .edge-icon {
       pointer-events: none;
@@ -339,16 +339,16 @@ def render_html() -> str:
     .next-halo {
       fill: none;
       stroke: #45c84f;
-      stroke-width: 6;
+      stroke-width: 7;
     }
     .warning-halo {
       fill: none;
       stroke: #f44336;
-      stroke-width: 6;
+      stroke-width: 7;
     }
     .edge-label {
       fill: #111;
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 800;
     }
     .edge-label-pill {
@@ -370,7 +370,7 @@ def render_html() -> str:
     }
     .current-badge-text {
       fill: #fff;
-      font-size: 19px;
+      font-size: 21px;
       font-weight: 800;
     }
     .warning-badge-icon {
@@ -682,21 +682,21 @@ def render_html() -> str:
             class: "warning-halo",
             cx: server.x,
             cy: server.y,
-            r: 33,
+            r: 40,
           }));
         } else if (isNext) {
           serverGroup.appendChild(makeSvg("circle", {
             class: "next-halo",
             cx: server.x,
             cy: server.y,
-            r: 33,
+            r: 40,
           }));
         }
         const marker = makeSvg("circle", {
           class: className,
           cx: server.x,
           cy: server.y,
-          r: 28,
+          r: 34,
         });
         const nextAction = isDown ? "click to mark up" : "click to mark down";
         addTitle(marker, `${displayId(server.id)} | ${server.label || ""} | ${nextAction}`);
@@ -704,41 +704,41 @@ def render_html() -> str:
         serverGroup.appendChild(makeSvg("image", {
           class: "edge-icon",
           href: "/edge_icon.png",
-          x: server.x - 19,
-          y: server.y - 19,
-          width: 38,
-          height: 38,
+          x: server.x - 24,
+          y: server.y - 24,
+          width: 48,
+          height: 48,
         }));
         if (isDown) {
           serverGroup.appendChild(makeSvg("rect", {
             class: "warning-badge",
-            x: server.x - 54,
-            y: server.y + 34,
-            width: 108,
-            height: 36,
-            rx: 18,
-            ry: 18,
+            x: server.x - 62,
+            y: server.y + 40,
+            width: 124,
+            height: 40,
+            rx: 20,
+            ry: 20,
           }));
           serverGroup.appendChild(makeSvg("image", {
             class: "warning-badge-icon",
             href: "/warning_icon.png",
-            x: server.x - 40,
-            y: server.y + 42,
-            width: 20,
-            height: 20,
+            x: server.x - 45,
+            y: server.y + 49,
+            width: 22,
+            height: 22,
           }));
-          addText(serverGroup, "Down", server.x + 18, server.y + 58, "current-badge-text", "middle");
+          addText(serverGroup, "Down", server.x + 20, server.y + 66, "current-badge-text", "middle");
         } else if (isNext) {
           serverGroup.appendChild(makeSvg("rect", {
             class: "next-badge",
-            x: server.x - 42,
-            y: server.y + 34,
-            width: 84,
-            height: 36,
-            rx: 18,
-            ry: 18,
+            x: server.x - 48,
+            y: server.y + 40,
+            width: 96,
+            height: 40,
+            rx: 20,
+            ry: 20,
           }));
-          addText(serverGroup, "Next", server.x, server.y + 58, "current-badge-text", "middle");
+          addText(serverGroup, "Next", server.x, server.y + 66, "current-badge-text", "middle");
         }
         addEdgeLabelPill(serverGroup, server);
         serverGroup.addEventListener("click", () => {
@@ -807,10 +807,10 @@ def render_html() -> str:
 
     function addEdgeLabelPill(svg, server) {
       const label = displayId(server.id);
-      const width = Math.max(74, label.length * 12 + 22);
-      const height = 30;
+      const width = Math.max(92, label.length * 14 + 28);
+      const height = 36;
       const x = server.x - width / 2;
-      const y = server.y - 68;
+      const y = server.y - 84;
       svg.appendChild(makeSvg("rect", {
         class: "edge-label-pill",
         x,
@@ -820,7 +820,7 @@ def render_html() -> str:
         rx: 10,
         ry: 10,
       }));
-      addText(svg, label, server.x, y + 21, "edge-label", "middle");
+      addText(svg, label, server.x, y + 25, "edge-label", "middle");
     }
 
     function renderDashboard() {

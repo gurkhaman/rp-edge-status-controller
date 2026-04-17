@@ -23,6 +23,7 @@ EDGE_ICON_IMAGE = "image/edge_icon.png"
 WARNING_ICON_IMAGE = "image/warning_icon.png"
 MOCK_INTERVAL_SECONDS = 10
 LED_SYNC_TIMEOUT_SECONDS = 0.5
+PI_SYNC_STABILIZATION_ROUNDS = 3
 BASE_DIR = Path(__file__).resolve().parent
 EDGE_STATUS_BASE_URLS = {
     "edge_1": "http://192.168.1.11:8000",
@@ -114,8 +115,12 @@ class MonitorState:
         self.sequence_index: int | None = None
         self.robot_x: float | None = None
         self.robot_y: float | None = None
-        self.down_servers: set[str] = set()
-        self.mock_enabled = True
+        self.manual_down_servers: set[str] = set()
+        self.unreachable_pi_servers: set[str] = set()
+        self.mock_enabled = False
+
+    def effective_down_servers(self) -> set[str]:
+        return self.manual_down_servers | self.unreachable_pi_servers
 
     def reload_topology(self) -> None:
         self.topology = load_topology()
@@ -155,6 +160,13 @@ class MonitorState:
             self.current_destination = current_destination
             self.waypoint_sequence = waypoint_sequence
             self.sequence_index = sequence_index
+            logger.info(
+                "Received telemetry robot=%s destination=%s sequence=%s sequence_index=%s",
+                self.robot_id,
+                self.current_destination,
+                self.waypoint_sequence,
+                self.sequence_index,
+            )
         elif telemetry.current_waypoint is not None:
             current_waypoint = resolve_waypoint_id(
                 self.topology, telemetry.current_waypoint
@@ -164,6 +176,12 @@ class MonitorState:
             self.sequence_index = None
             self.route_index = route_index_from_waypoint(
                 self.topology,
+                current_waypoint,
+                self.route_index,
+            )
+            logger.info(
+                "Received legacy telemetry robot=%s current_waypoint=%s route_index=%s",
+                self.robot_id,
                 current_waypoint,
                 self.route_index,
             )
@@ -187,9 +205,9 @@ class MonitorState:
 
         status = normalize_server_status(payload)
         if status == "down":
-            self.down_servers.add(payload.server_id)
+            self.manual_down_servers.add(payload.server_id)
         else:
-            self.down_servers.discard(payload.server_id)
+            self.manual_down_servers.discard(payload.server_id)
 
         return self.build_and_sync_state(source="server-health")
 
@@ -202,10 +220,18 @@ class MonitorState:
 
     def build_and_sync_state(self, source: str = "memory") -> MonitorStateResponse:
         monitor_state = self.build_state(source=source)
-        sync_edge_led_statuses(self.topology, monitor_state)
+        for _ in range(PI_SYNC_STABILIZATION_ROUNDS):
+            if not sync_edge_led_statuses(self.topology, monitor_state, self):
+                return monitor_state
+            monitor_state = self.build_state(source="pi-sync")
+
+        logger.warning(
+            "Pi sync did not stabilize after %s attempts", PI_SYNC_STABILIZATION_ROUNDS
+        )
         return monitor_state
 
     def build_state(self, source: str = "memory") -> MonitorStateResponse:
+        effective_down_servers = self.effective_down_servers()
         if (
             not self.mock_enabled
             and self.waypoint_sequence is not None
@@ -233,14 +259,14 @@ class MonitorState:
             self.topology,
             target_segment["id"],
             target_segment["candidate_servers"],
-            self.down_servers,
+            effective_down_servers,
         )
         current_ranking = (
             build_ranking(
                 self.topology,
                 current_segment["id"],
                 current_segment["candidate_servers"],
-                self.down_servers,
+                effective_down_servers,
             )
             if current_segment is not None
             else []
@@ -275,7 +301,7 @@ class MonitorState:
             current_assigned_server=assigned,
             next_segment=SegmentState(**next_segment) if next_segment else None,
             recommended_server=recommended,
-            down_servers=sorted(self.down_servers),
+            down_servers=sorted(effective_down_servers),
             qos_ranking=ranking,
         )
 
@@ -504,13 +530,13 @@ def desired_led_state(
 
 def sync_edge_led_status(
     server_id: str, led_state: Literal["on", "idle", "off"]
-) -> None:
+) -> bool | None:
     base_url = EDGE_STATUS_BASE_URLS.get(server_id)
     if base_url is None:
         logger.warning(
             "No Pi endpoint configured for %s (desired state: %s)", server_id, led_state
         )
-        return
+        return None
 
     endpoint = f"{base_url}/status/{led_state}"
     logger.info(
@@ -526,6 +552,7 @@ def sync_edge_led_status(
                 response.status,
                 body,
             )
+            return True
     except HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace").strip()
         logger.warning(
@@ -535,15 +562,19 @@ def sync_edge_led_status(
             exc.code,
             body,
         )
+        return False
     except Exception as exc:
         logger.warning(
             "Failed to sync %s to %s via %s: %s", server_id, led_state, endpoint, exc
         )
+        return False
 
 
 def sync_edge_led_statuses(
-    topology: dict[str, Any], monitor_state: MonitorStateResponse
-) -> None:
+    topology: dict[str, Any],
+    monitor_state: MonitorStateResponse,
+    controller_state: MonitorState,
+) -> bool:
     desired_states = {
         server["id"]: desired_led_state(server["id"], monitor_state)
         for server in topology["edge_servers"]
@@ -558,9 +589,22 @@ def sync_edge_led_statuses(
         monitor_state.down_servers,
         desired_states,
     )
+    reachability_changed = False
     for server in topology["edge_servers"]:
         server_id = server["id"]
-        sync_edge_led_status(server_id, desired_states[server_id])
+        sync_result = sync_edge_led_status(server_id, desired_states[server_id])
+        if sync_result is True:
+            if server_id in controller_state.unreachable_pi_servers:
+                logger.info("Pi %s recovered; clearing auto-down state", server_id)
+                controller_state.unreachable_pi_servers.discard(server_id)
+                reachability_changed = True
+        elif sync_result is False:
+            if server_id not in controller_state.unreachable_pi_servers:
+                logger.warning("Pi %s is unresponsive; marking server down", server_id)
+                controller_state.unreachable_pi_servers.add(server_id)
+                reachability_changed = True
+
+    return reachability_changed
 
 
 # 테스트용 (route_index 자동 증가)
@@ -650,7 +694,25 @@ def set_mock_mode_v1(payload: MockControlPayload) -> MockModeResponse:
 
 @app.post("/api/v1/telemetry", response_model=MonitorStateResponse)
 def post_telemetry_v1(payload: TelemetryPayload) -> MonitorStateResponse:
-    return state.apply_telemetry(payload)
+    logger.info(
+        "Telemetry POST robot=%s current_waypoint=%s current_destination=%s waypoint_sequence=%s",
+        payload.robot_id,
+        payload.current_waypoint,
+        payload.current_destination,
+        payload.waypoint_sequence,
+    )
+    try:
+        return state.apply_telemetry(payload)
+    except HTTPException as exc:
+        logger.warning(
+            "Rejected telemetry robot=%s current_waypoint=%s current_destination=%s waypoint_sequence=%s detail=%s",
+            payload.robot_id,
+            payload.current_waypoint,
+            payload.current_destination,
+            payload.waypoint_sequence,
+            exc.detail,
+        )
+        raise
 
 
 @app.post("/api/v1/server-health", response_model=MonitorStateResponse)
