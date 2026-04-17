@@ -32,7 +32,7 @@ EDGE_STATUS_BASE_URLS = {
     "edge_5": "http://192.168.1.14:8000",
 }
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error").getChild("rp_edge_status_controller")
 
 
 # 터틀봇 현재 웨이포인트
@@ -507,10 +507,15 @@ def sync_edge_led_status(
 ) -> None:
     base_url = EDGE_STATUS_BASE_URLS.get(server_id)
     if base_url is None:
-        logger.warning("No Pi endpoint configured for %s", server_id)
+        logger.warning(
+            "No Pi endpoint configured for %s (desired state: %s)", server_id, led_state
+        )
         return
 
     endpoint = f"{base_url}/status/{led_state}"
+    logger.info(
+        "Sending Pi LED state for %s: %s via %s", server_id, led_state, endpoint
+    )
     try:
         with urlopen(endpoint, timeout=LED_SYNC_TIMEOUT_SECONDS) as response:
             body = response.read().decode("utf-8", errors="replace").strip()
@@ -539,9 +544,23 @@ def sync_edge_led_status(
 def sync_edge_led_statuses(
     topology: dict[str, Any], monitor_state: MonitorStateResponse
 ) -> None:
+    desired_states = {
+        server["id"]: desired_led_state(server["id"], monitor_state)
+        for server in topology["edge_servers"]
+    }
+    logger.info(
+        "Syncing Pi LED states source=%s current_segment=%s next_segment=%s recommended=%s assigned=%s down=%s states=%s",
+        monitor_state.source,
+        monitor_state.current_segment.id if monitor_state.current_segment else None,
+        monitor_state.next_segment.id if monitor_state.next_segment else None,
+        monitor_state.recommended_server,
+        monitor_state.current_assigned_server,
+        monitor_state.down_servers,
+        desired_states,
+    )
     for server in topology["edge_servers"]:
         server_id = server["id"]
-        sync_edge_led_status(server_id, desired_led_state(server_id, monitor_state))
+        sync_edge_led_status(server_id, desired_states[server_id])
 
 
 # 테스트용 (route_index 자동 증가)
