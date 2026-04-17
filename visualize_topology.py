@@ -151,13 +151,9 @@ def render_html() -> str:
       font-size: 15px;
       font-weight: 800;
     }
-    .server-token.assigned {
+    .server-token.recommended {
       border-color: #45c84f;
       color: #45c84f;
-    }
-    .server-token.recommended {
-      border-color: #3f8cff;
-      color: #3f8cff;
     }
      .ranking-list {
        display: grid;
@@ -192,11 +188,11 @@ def render_html() -> str:
       background: linear-gradient(90deg, #bfc5ce, #8d96a3);
     }
     .ranking-row.recommended-candidate {
-      border-color: #b7d3ff;
-      background: #f5f9ff;
+      border-color: #bfe8c3;
+      background: #f3fcf4;
     }
     .ranking-row.recommended-candidate .rank-bar {
-      background: linear-gradient(90deg, #2f73d9, #50b7de);
+      background: linear-gradient(90deg, #2f9e44, #45c84f);
     }
     .ranking-row.down {
       color: #f44336;
@@ -242,10 +238,6 @@ def render_html() -> str:
       text-align: center;
     }
     .recommended {
-      color: #3f8cff;
-      font-weight: 700;
-    }
-    .assigned {
       color: #45c84f;
       font-weight: 700;
     }
@@ -254,7 +246,7 @@ def render_html() -> str:
       font-weight: 700;
     }
     .qos-row-recommended {
-      background: #f5f9ff;
+      background: #f3fcf4;
     }
     .qos-row-down {
       background: #fff5f4;
@@ -327,13 +319,15 @@ def render_html() -> str:
       stroke: #111;
       stroke-width: 2;
     }
+    .edge-server-toggle {
+      cursor: pointer;
+    }
+    .edge-server-toggle.busy {
+      cursor: progress;
+    }
     .edge-server.recommended-server {
       stroke: #102a16;
       stroke-width: 3;
-    }
-    .edge-server.current-server {
-      stroke: #111;
-      stroke-width: 2;
     }
     .edge-server.down-server {
       stroke: #f44336;
@@ -342,14 +336,9 @@ def render_html() -> str:
     .edge-icon {
       pointer-events: none;
     }
-    .current-halo {
-      fill: none;
-      stroke: #45c84f;
-      stroke-width: 6;
-    }
     .next-halo {
       fill: none;
-      stroke: #3f8cff;
+      stroke: #45c84f;
       stroke-width: 6;
     }
     .warning-halo {
@@ -368,14 +357,9 @@ def render_html() -> str:
       stroke-width: 1;
       opacity: 0.95;
     }
-    .current-badge {
+    .next-badge {
       fill: #45c84f;
       stroke: #45c84f;
-      stroke-width: 1;
-    }
-    .next-badge {
-      fill: #3f8cff;
-      stroke: #3f8cff;
       stroke-width: 1;
     }
     .warning-badge {
@@ -436,17 +420,11 @@ def render_html() -> str:
         <div class="key">Destination</div><div id="waypoint" class="value">-</div>
       </div>
 
-      <h2>Current</h2>
-      <div class="kv">
-        <div class="key">Segment</div><div id="current-segment" class="value">-</div>
-        <div class="key">Assigned</div><div id="assigned-server">-</div>
-        <div class="key">Unavailable</div><div id="down-servers" class="pill-row">-</div>
-      </div>
-
       <h2>Next</h2>
        <div class="kv">
          <div class="key">Segment</div><div id="next-segment" class="value">-</div>
-         <div class="key">Recommended</div><div id="recommended-server">-</div>
+         <div class="key">Next Server</div><div id="recommended-server">-</div>
+         <div class="key">Unavailable</div><div id="down-servers" class="pill-row">-</div>
          <div class="key full-row-key">Candidates</div><div id="candidate-servers" class="full-row-value">-</div>
        </div>
 
@@ -474,6 +452,7 @@ def render_html() -> str:
     let lastStatePayload = "";
     let topology = null;
     let state = null;
+    const pendingServerUpdates = new Set();
 
     function makeSvg(tag, attrs, text) {
       const node = document.createElementNS(SVG_NS, tag);
@@ -488,6 +467,12 @@ def render_html() -> str:
 
     function addTitle(parent, text) {
       parent.appendChild(makeSvg("title", {}, text));
+    }
+
+    function setStatusMessage(message, isError = false) {
+      const status = document.getElementById("status");
+      status.textContent = message;
+      status.classList.toggle("error", isError);
     }
 
     function addText(svg, text, x, y, className, anchor = "start") {
@@ -563,6 +548,47 @@ def render_html() -> str:
       return displayId(segment.id);
     }
 
+    async function postJson(source, payload) {
+      const response = await fetch(source, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        throw new Error(`${source}: HTTP ${response.status}`);
+      }
+      return response.text();
+    }
+
+    async function toggleServer(serverId) {
+      if (!state || pendingServerUpdates.has(serverId)) {
+        return;
+      }
+      const isDown = new Set(state.down_servers || []).has(serverId);
+      const nextStatus = isDown ? "up" : "down";
+      pendingServerUpdates.add(serverId);
+      renderMap();
+      setStatusMessage(`${displayId(serverId)} -> ${nextStatus}...`);
+      try {
+        const statePayload = await postJson("/api/v1/server-health", {
+          server_id: serverId,
+          status: nextStatus,
+        });
+        lastStatePayload = statePayload;
+        state = JSON.parse(statePayload);
+        renderMap();
+        renderDashboard();
+        setStatusMessage(`${displayId(serverId)} set ${nextStatus} at ${new Date().toLocaleTimeString()}`);
+      } catch (error) {
+        setStatusMessage(`toggle failed: ${error.message}`, true);
+      } finally {
+        pendingServerUpdates.delete(serverId);
+        renderMap();
+      }
+    }
+
     function shortenLine(start, end, amount) {
       const dx = end.x - start.x;
       const dy = end.y - start.y;
@@ -624,36 +650,31 @@ def render_html() -> str:
       }
 
       const recommended = state && state.recommended_server;
-      const assigned = state && state.current_assigned_server;
       const downServers = new Set((state && state.down_servers) || []);
       for (const server of topology.edge_servers) {
+        const serverGroup = makeSvg("g", {
+          class: pendingServerUpdates.has(server.id) ? "edge-server-toggle busy" : "edge-server-toggle",
+          role: "button",
+          tabindex: "0",
+          "aria-label": `${displayId(server.id)} toggle power`,
+        });
         let className = "edge-server";
         if (downServers.has(server.id)) {
           className += " down-server";
-        } else if (server.id === assigned) {
-          className += " current-server";
         } else if (server.id === recommended) {
           className += " recommended-server";
         }
         const isDown = downServers.has(server.id);
-        const isCurrent = server.id === assigned && !downServers.has(server.id);
-        const isNext = server.id === recommended && server.id !== assigned && !downServers.has(server.id);
+        const isNext = server.id === recommended && !downServers.has(server.id);
         if (isDown) {
-          svg.appendChild(makeSvg("circle", {
+          serverGroup.appendChild(makeSvg("circle", {
             class: "warning-halo",
             cx: server.x,
             cy: server.y,
             r: 33,
           }));
-        } else if (isCurrent) {
-          svg.appendChild(makeSvg("circle", {
-            class: "current-halo",
-            cx: server.x,
-            cy: server.y,
-            r: 33,
-          }));
         } else if (isNext) {
-          svg.appendChild(makeSvg("circle", {
+          serverGroup.appendChild(makeSvg("circle", {
             class: "next-halo",
             cx: server.x,
             cy: server.y,
@@ -666,9 +687,10 @@ def render_html() -> str:
           cy: server.y,
           r: 28,
         });
-        addTitle(marker, `${displayId(server.id)} | ${server.label || ""}`);
-        svg.appendChild(marker);
-        svg.appendChild(makeSvg("image", {
+        const nextAction = isDown ? "click to mark up" : "click to mark down";
+        addTitle(marker, `${displayId(server.id)} | ${server.label || ""} | ${nextAction}`);
+        serverGroup.appendChild(marker);
+        serverGroup.appendChild(makeSvg("image", {
           class: "edge-icon",
           href: "/edge_icon.png",
           x: server.x - 19,
@@ -677,7 +699,7 @@ def render_html() -> str:
           height: 38,
         }));
         if (isDown) {
-          svg.appendChild(makeSvg("rect", {
+          serverGroup.appendChild(makeSvg("rect", {
             class: "warning-badge",
             x: server.x - 54,
             y: server.y + 34,
@@ -686,7 +708,7 @@ def render_html() -> str:
             rx: 18,
             ry: 18,
           }));
-          svg.appendChild(makeSvg("image", {
+          serverGroup.appendChild(makeSvg("image", {
             class: "warning-badge-icon",
             href: "/warning_icon.png",
             x: server.x - 40,
@@ -694,20 +716,9 @@ def render_html() -> str:
             width: 20,
             height: 20,
           }));
-          addText(svg, "Down", server.x + 18, server.y + 58, "current-badge-text", "middle");
-        } else if (isCurrent) {
-          svg.appendChild(makeSvg("rect", {
-            class: "current-badge",
-            x: server.x - 55,
-            y: server.y + 34,
-            width: 110,
-            height: 36,
-            rx: 18,
-            ry: 18,
-          }));
-          addText(svg, "Current", server.x, server.y + 58, "current-badge-text", "middle");
+          addText(serverGroup, "Down", server.x + 18, server.y + 58, "current-badge-text", "middle");
         } else if (isNext) {
-          svg.appendChild(makeSvg("rect", {
+          serverGroup.appendChild(makeSvg("rect", {
             class: "next-badge",
             x: server.x - 42,
             y: server.y + 34,
@@ -716,9 +727,19 @@ def render_html() -> str:
             rx: 18,
             ry: 18,
           }));
-          addText(svg, "Next", server.x, server.y + 58, "current-badge-text", "middle");
+          addText(serverGroup, "Next", server.x, server.y + 58, "current-badge-text", "middle");
         }
-        addEdgeLabelPill(svg, server);
+        addEdgeLabelPill(serverGroup, server);
+        serverGroup.addEventListener("click", () => {
+          void toggleServer(server.id);
+        });
+        serverGroup.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            void toggleServer(server.id);
+          }
+        });
+        svg.appendChild(serverGroup);
       }
 
     }
@@ -796,12 +817,8 @@ def render_html() -> str:
         return;
       }
       const robot = state.robot || {};
-      const nextSegment = state.next_segment || {};
       document.getElementById("waypoint").textContent =
         displayWaypoint(robot.current_destination || robot.current_waypoint) || "-";
-      document.getElementById("current-segment").textContent =
-        state.current_segment ? displaySegment(state.current_segment) : "-";
-      document.getElementById("assigned-server").innerHTML = serverToken(state.current_assigned_server, "assigned");
       document.getElementById("next-segment").textContent =
         state.next_segment ? displaySegment(state.next_segment) : "-";
       document.getElementById("recommended-server").innerHTML = serverToken(state.recommended_server, "recommended");
@@ -840,7 +857,6 @@ def render_html() -> str:
     }
 
     async function refreshState() {
-      const status = document.getElementById("status");
       try {
         const statePayload = await fetchText(STATE_SOURCE);
         if (statePayload !== lastStatePayload) {
@@ -849,20 +865,16 @@ def render_html() -> str:
         }
         renderMap();
         renderDashboard();
-        status.textContent = `updated ${new Date().toLocaleTimeString()}`;
-        status.classList.remove("error");
+        setStatusMessage(`updated ${new Date().toLocaleTimeString()}`);
       } catch (error) {
-        status.textContent = `state load failed: ${error.message}`;
-        status.classList.add("error");
+        setStatusMessage(`state load failed: ${error.message}`, true);
       }
     }
 
     loadTopology()
       .then(refreshState)
       .catch((error) => {
-        const status = document.getElementById("status");
-        status.textContent = `topology load failed: ${error.message}`;
-        status.classList.add("error");
+        setStatusMessage(`topology load failed: ${error.message}`, true);
       });
     setInterval(refreshState, REFRESH_INTERVAL_MS);
   </script>
